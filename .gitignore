@@ -5,10 +5,10 @@
 ## Dependency directory
 ## Commenting this out is preferred by some people, see
 ## https://docs.npmjs.com/misc/faq#should-i-check-my-node_modules-folder-into-git
-node_modules
+Functions/
 
-# Book build output
-_book
+# Powershell file used to Run the PSModuleBuilder.ps1 with default parameters for testing.
+Run.ps1
 
 # eBook build output
 *.epub
