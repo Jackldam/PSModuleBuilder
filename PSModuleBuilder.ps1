@@ -1,7 +1,7 @@
 function Update-Module {
     <#
     .SYNOPSIS
-        Short description
+        This will allow you to quickly create your own custom Powershell Module's
     .DESCRIPTION
         Given a version number Major.Minor.Build, increment the:
 
