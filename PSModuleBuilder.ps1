@@ -242,7 +242,7 @@ $Params = @{
     #Specify the location where to put the Module
     Destination = "Destination"
     #Actual Module name
-    ModuleName  = "PatchManagement"
+    ModuleName  = "ModuleName"
     #Select if build "None,Major,Minor & Build"
     Increment   = None
 }
