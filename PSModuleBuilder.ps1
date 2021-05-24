@@ -12,11 +12,11 @@ if (Test-Path -Path:".\Functions\PSModuleBuilder\Update-Version.ps1") {
 #endregion Functions
 
 . ".\Functions\PSModuleBuilder\Publish-PSModule.ps1" 
-
+#test
 Publish-PSModule `
     -Author "Jack den Ouden" `
     -Company "SysAdminHeaven"`
     -ModuleName "PSModuleBuilder"`
     -BuildCategory:"Build" `
-    -Source ".\Functions\PSModuleBuilder" `
-    -Destination ".\"
+    -Source ".\Functions" `
+    -Destination "$PSScriptRoot" -Verbose
