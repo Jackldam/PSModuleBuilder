@@ -1,9 +1,32 @@
-# Node rules:
-## Functions folder i personally use to create my custom Module's
-Functions/
+# Ignore system files
+Thumbs.db
+.DS_Store
 
-# Powershell file used to Run the PSModuleBuilder.ps1 with default parameters for testing.
-PSModuleBuilder.ps1
+# Ignore Visual Studio Code settings
+.vscode/
 
-# Exclude PDF Files
-*.pdf
+# Ignore PowerShell temporary files
+*.ps1xml
+*.psc1
+*.psd1
+*.cdxml
+*.clixml
+
+# Ignore log files
+*.log
+
+# Ignore build output
+bin/
+obj/
+
+# Ignore files built by PowerShell
+*.dll
+*.exe
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Ignore all files that might appear in the root of a volume
+$RECYCLE.BIN/
+System Volume Information/
