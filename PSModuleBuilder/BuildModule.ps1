@@ -1,13 +1,28 @@
-$PSModuleParams = @{
-    Author          = "Jack den Ouden" #Author of the module
-    CompanyName     = "SysadminHeaven" #Company name
-    ModuleName      = "PSModuleBuilder"
-    Copyright       = "© 2020-$(Get-Date -Format "yyyy") SysadminHeaven. All rights reserved."
-    Source          = ".\PSModuleBuilder\Src"
-    BuildFolder     = ".\PSModuleBuilder\Build"
-    ReleaseFolder   = ".\PSModuleBuilder\Release"
-    RequiredModules = ("Pester")
-    BuildType       = "build"
+
+$Author = "Jack den Ouden"
+$CompanyName = "SysAdmin Heaven"
+
+$Repository = "ReleaseGallery"
+$RepositoryPath = "$PSScriptRoot\Release"
+
+if (!(Get-PSRepository -Name $Repository -ErrorAction Continue)) {
+    Register-PSRepository -Name $Repository `
+        -SourceLocation $RepositoryPath `
+        -PublishLocation $RepositoryPath `
+        -InstallationPolicy Trusted
 }
 
-Build-PSModule @PSModuleParams -Verbose 
+
+$PSModuleParams = @{
+    Author          = $Author
+    CompanyName     = $CompanyName
+    ModuleName      = "PSModuleBuilder"
+    Copyright       = "© 2020-$(Get-Date -Format "yyyy") $CompanyName. All rights reserved."
+    Source          = "$PSScriptRoot\Src"
+    BuildFolder     = "$PSScriptRoot\Build"
+    ReleaseFolder   = "$PSScriptRoot\Release"
+    RequiredModules = @()
+    BuildType       = "Major"
+}
+
+Build-PSModule @PSModuleParams -Repository $Repository -Verbose
