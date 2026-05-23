@@ -23,16 +23,23 @@ Function Invoke-PSModuleTests {
     #>
 
     [CmdletBinding()]
+    [OutputType([string])]
     param (
         [Parameter(Mandatory = $true)]
         [string]
         $Source
     )
 
-    Write-Verbose "Invoking Pester tests"
-    $PesterResults = Invoke-Pester -Path $Source `
-        -PassThru -Quiet -WarningAction SilentlyContinue
+    begin {}
 
-    return $PesterResults.Result
+    process {
+        Write-Verbose "Invoking Pester tests"
+        $PesterResults = Invoke-Pester -Path $Source `
+            -PassThru -Quiet -WarningAction SilentlyContinue
+
+        return $PesterResults.Result
+    }
+
+    end {}
 
 }

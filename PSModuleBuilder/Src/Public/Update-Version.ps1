@@ -27,25 +27,25 @@ function Update-Version {
     .NOTES
         2021-01-29 Jack den Ouden <jack@ldam.nl>
             Script created
-        2024-01-27 Jack den Ouden <jack@ldam.nl
+        2024-01-27 Jack den Ouden <jack@ldam.nl>
             Changed the function to use buildtype with validateSet instead of separate switches.
     #>
+    [CmdletBinding()]
+    [OutputType([string])]
     param (
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [version]
         $Version,
         [Parameter(Mandatory = $false)]
+        [ValidateSet('Build', 'Minor', 'Major')]
         [string]
-        [ValidateSet('Build', 'Minor', "Major")]
-        $BuildType = "Build"
+        $BuildType = 'Build'
     )
 
-    switch ($PSBoundParameters.Buildtype) {
-        Build { $Version = "{0}.{1}.{2}" -f $($Version.Major), $($Version.Minor), $($Version.Build + 1) }
-        Minor { $Version = "{0}.{1}.{2}" -f $($Version.Major), $($Version.Minor + 1), 0 }
-        Major { $Version = "{0}.{1}.{2}" -f $($Version.Major + 1), 0, 0 }
+    switch ($BuildType) {
+        'Build' { return "{0}.{1}.{2}" -f $Version.Major, $Version.Minor, ($Version.Build + 1) }
+        'Minor' { return "{0}.{1}.{2}" -f $Version.Major, ($Version.Minor + 1), 0 }
+        'Major' { return "{0}.{1}.{2}" -f ($Version.Major + 1), 0, 0 }
     }
-    
-    return "$Version"
 }

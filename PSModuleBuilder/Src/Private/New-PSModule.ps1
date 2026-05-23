@@ -11,6 +11,7 @@ Function New-PSModule {
     #>
 
     [CmdletBinding()]
+    [OutputType([string[]])]
     param (
         # Author of the Module
         [Parameter(Mandatory)]
@@ -31,26 +32,29 @@ Function New-PSModule {
         $Destination
     )
 
-    #* Get Source folder content.
-    #region
+    begin {}
 
-    $ListFiles = Get-ChildItem -Path:"$Source" -Recurse -Filter:"*.ps1" | 
-    Where-Object { ($_.Name -NotLike "*Tests.ps1") -and ($_.Name -NotLike "WIP_*") } | Sort-Object
+    process {
+        #* Get Source folder content.
+        #region
 
-    If ($ListFiles) {
-        Write-Verbose "Found $($ListFiles.Count) functions to add"
-    }
-    else {
-        Write-Verbose "No functions to add found in $Source"
-        throw "No functions to add found in $Source"
-    }
+        $ListFiles = Get-ChildItem -Path:"$Source" -Recurse -Filter:"*.ps1" | 
+        Where-Object { ($_.Name -NotLike "*Tests.ps1") -and ($_.Name -NotLike "WIP_*") } | Sort-Object
 
-    #endregion
+        If ($ListFiles) {
+            Write-Verbose "Found $($ListFiles.Count) functions to add"
+        }
+        else {
+            Write-Verbose "No functions to add found in $Source"
+            throw "No functions to add found in $Source"
+        }
 
-    #* Module Synopsis
-    #region
-    Write-Verbose "Creating module synopsis"
-    $ModuleSynopsis = @"
+        #endregion
+
+        #* Module Synopsis
+        #region
+        Write-Verbose "Creating module synopsis"
+        $ModuleSynopsis = @"
 #
 # Modulefile for module `'$ModuleName`'
 #
@@ -62,15 +66,15 @@ Function New-PSModule {
 
 "@
 
-    #endregion
+        #endregion
 
-    #* Functions Code
-    #region
+        #* Functions Code
+        #region
 
-    $FunctionsCode = $ListFiles | ForEach-Object {
-        Write-Verbose "Adding function $($_.BaseName)"
-        
-        @"
+        $FunctionsCode = $ListFiles | ForEach-Object {
+            Write-Verbose "Adding function $($_.BaseName)"
+            
+            @"
 
 #* $($_.BaseName)
 #region
@@ -80,25 +84,28 @@ $(Get-Content -Path $_.FullName -Raw)
 #endregion
 
 "@
+        }
+
+        #endregion
+
+        #* Export Module file to destination
+        #region
+
+        Write-Verbose "Exporting module file to $Destination\$ModuleName.psm1"
+        New-Item -Path "$Destination\$ModuleName.psm1" `
+            -ItemType File `
+            -Value $($ModuleSynopsis + $FunctionsCode) -Force | Out-Null
+
+        #endregion
+
+        #* Return public functions
+        #region
+
+        return $ListFiles | Where-Object FullName -Like "*\Public\*" | Select-Object BaseName -ExpandProperty BaseName
+
+        #endregion
     }
 
-    #endregion
-
-    #* Export Module file to destination
-    #region
-
-    Write-Verbose "Exporting module file to $Destination\$ModuleName.psm1"
-    New-Item -Path "$Destination\$ModuleName.psm1" `
-        -ItemType File `
-        -Value $($ModuleSynopsis + $FunctionsCode) -Force | Out-Null
-
-    #endregion
-
-    #* Return public functions
-    #region
-
-    return $ListFiles | Where-Object FullName -Like "*\Public\*" | Select-Object BaseName -ExpandProperty BaseName
-
-    #endregion
+    end {}
 
 }

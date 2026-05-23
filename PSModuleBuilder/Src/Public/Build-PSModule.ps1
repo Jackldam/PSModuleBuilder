@@ -29,6 +29,7 @@ function Build-PSModule {
     #>
     
     [CmdletBinding()]
+    [OutputType([void])]
     param (
         # Author of the Module
         [Parameter(Mandatory)]
@@ -42,7 +43,7 @@ function Build-PSModule {
         [Parameter(Mandatory)]
         [string]
         $Copyright,
-        # #Name of the module
+        # Name of the module
         [Parameter(Mandatory = $true)]
         [string]
         $ModuleName,
@@ -63,15 +64,19 @@ function Build-PSModule {
         [Parameter(Mandatory)]
         [string]
         $ReleaseFolder,
-        #BuildType
+        # BuildType
         [Parameter()]
         [ValidateSet('Build', 'Minor', 'Major')]
         [string]
         $BuildType = 'Build',
-        # Repository
+        # Repository to publish to
         [Parameter()]
         [string]
-        $Repository
+        $Repository,
+        # Compress the built module to a zip file in the release folder
+        [Parameter()]
+        [switch]
+        $Zip
     )
 
     begin {
@@ -98,18 +103,34 @@ function Build-PSModule {
         if ($ModuleTest) {
             $LastRelease = $ModuleTest.version
             Write-Verbose "Previous release $LastRelease"
-            
-            Write-Verbose "Uninstall $ModuleName"
-            Uninstall-Module -Name $ModuleName -AllVersions -Force
 
-            Write-Verbose "Install $ModuleName"
-            Install-Module -Repository $Repository -Name $ModuleName -Force
+            try {
+                Write-Verbose "Uninstall $ModuleName"
+                Uninstall-Module -Name $ModuleName -AllVersions -Force -ErrorAction Stop
+            }
+            catch {
+                Write-Warning "Could not uninstall module '$ModuleName': $_"
+            }
+
+            try {
+                Write-Verbose "Install $ModuleName"
+                Install-Module -Repository $Repository -Name $ModuleName -Force -ErrorAction Stop
+            }
+            catch {
+                Write-Error "Failed to install module '$ModuleName' from repository '$Repository': $_"
+                throw
+            }
             
             Write-Verbose "Get $ModuleName GUID"
             $ModuleGet = Get-Module -ListAvailable $ModuleName
 
-            Write-Verbose "Uninstall $ModuleName"
-            Uninstall-Module -Name $ModuleName -AllVersions -Force
+            try {
+                Write-Verbose "Uninstall $ModuleName"
+                Uninstall-Module -Name $ModuleName -AllVersions -Force -ErrorAction Stop
+            }
+            catch {
+                Write-Warning "Could not uninstall module '$ModuleName': $_"
+            }
             
         }
         else {
@@ -172,9 +193,9 @@ function Build-PSModule {
         #region
 
         Write-Verbose "Performing tests of the functions"
-        $TestResult = Invoke-Pester -Path "$Source" -PassThru -Quiet
+        $TestResult = Invoke-PSModuleTests -Source "$Source"
         
-        if ($TestResult.result -eq "Failed") {
+        if ($TestResult -eq "Failed") {
             Write-Verbose "Tests failed"
             throw "Tests failed"
         }
@@ -229,11 +250,9 @@ function Build-PSModule {
             RequiredModules   = $RequiredModules
             FunctionsToExport = $FunctionsToExport
 
-            AliasesToExport   = @($null)
-            CmdletsToExport   = @($null)
-            VariablesToExport = @($null)
-
-            PrivateData       = ${PrivateData}
+            AliasesToExport   = @()
+            CmdletsToExport   = @()
+            VariablesToExport = @()
             
         } 
         
@@ -245,22 +264,31 @@ function Build-PSModule {
         #region
 
         if ($Repository) {
-            #Add build folder to PSModule path
+            #* Save the module folder path before publishing
+            $ModuleFolder = Split-Path $BuildFolder -Parent
+
+            #Add module folder to PSModule path
             Write-Verbose "Add build folder to PSModule path"
-            $BuildFolder = Split-Path $BuildFolder -Parent
-            Write-Verbose "$BuildFolder"
-            if (!($env:PSModulePath -contains $BuildFolder)) {
-                $env:PSModulePath = ($env:PSModulePath + ";$BuildFolder")
+            Write-Verbose "$ModuleFolder"
+            if (($env:PSModulePath -split ';') -notcontains $ModuleFolder) {
+                $env:PSModulePath = ($env:PSModulePath + ";$ModuleFolder")
             }
 
             #Publish module
             Write-Verbose "Publish module"
-            Publish-Module -Repository $Repository `
-                -Name $ModuleName
-
-            #Remove build folder from PSModule path
-            Write-Verbose "Remove build folder from PSModule path"
-            $env:PSModulePath = ($env:PSModulePath -split ";" | Where-Object { $_ -ne $BuildFolder }) -join ";"
+            try {
+                Publish-Module -Repository $Repository `
+                    -Name $ModuleName -ErrorAction Stop
+            }
+            catch {
+                Write-Error "Failed to publish module '$ModuleName' to repository '$Repository': $_"
+                throw
+            }
+            finally {
+                #Remove module folder from PSModule path
+                Write-Verbose "Remove build folder from PSModule path"
+                $env:PSModulePath = ($env:PSModulePath -split ";" | Where-Object { $_ -ne $ModuleFolder }) -join ";"
+            }
         }
         
         #endregion
@@ -269,8 +297,9 @@ function Build-PSModule {
         #region
         if ($Zip) {
             Write-Verbose "Zipping module and export to release folder"
+            $ModuleFolder = Split-Path $BuildFolder -Parent
             $Zipfilename = "$ReleaseFolder\$ModuleName-$Version.zip"
-            Compress-Archive -Path $(Split-Path $BuildFolder -Parent) -DestinationPath $Zipfilename -Force
+            Compress-Archive -Path $ModuleFolder -DestinationPath $Zipfilename -Force
         }
         #endregion
 

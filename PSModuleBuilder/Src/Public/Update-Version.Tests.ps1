@@ -28,4 +28,12 @@ Describe "Update-Version" {
         }
     }
 
+    Context "When no Buildtype is provided" {
+        It "Defaults to incrementing the build number" {
+            $version = [version]"1.2.3"
+            $result = Update-Version -Version $version
+            $result | Should -Be "1.2.4"
+        }
+    }
+
 }
